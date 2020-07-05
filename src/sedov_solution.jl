@@ -478,7 +478,7 @@ function get_ideal_sedov_data(data::SedovData, fit::SedovFit)
 end
 
 
-function get_sedov_data_from_snapshot(fi::String, blast_center::Vector{Float64}=[3.0, 3.0, 3.0];
+function get_sedov_data_from_gadget(fi::String, blast_center::Vector{Float64}=[3.0, 3.0, 3.0];
                                       CRs=false, Nbins::Int64=0)
 
     h = head_to_obj(fi)
@@ -584,10 +584,28 @@ function get_sedov_data_from_snapshot(fi::String, blast_center::Vector{Float64}=
 
 end
 
-function get_sedov_solution(filename::String, blast_center::Vector{Float64}=[3.0, 3.0, 3.0];
+function get_sedov_solution_from_gadget(filename::String, blast_center::Vector{Float64}=[3.0, 3.0, 3.0];
                             CRs::Bool=false, Nbins::Int64=0, Ndim::Int64=3)
 
-    sedov_data = get_sedov_data_from_snapshot(filename, blast_center, CRs=CRs, Nbins=Nbins)
+    sedov_data = get_sedov_data_from_gadget(filename, blast_center, CRs=CRs, Nbins=Nbins)
+
+    if CRs
+        γ=7.0/5.0
+    else
+        γ=5.0/3.0
+    end
+
+    sedov_fit  = get_ideal_sedov_fit(sedov_data.rho_s, ndim=Ndim, γ=γ)
+
+    sedov_ideal = get_ideal_sedov_data(sedov_data, sedov_fit)
+
+    return sedov_data, sedov_ideal
+
+end
+
+function get_sedov_solution(sedov_data::SedovData;
+                            CRs::Bool=false, Nbins::Int64=0, Ndim::Int64=3)
+
 
     if CRs
         γ=7.0/5.0

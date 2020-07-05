@@ -13,7 +13,11 @@ module AnalyticMHDTestSolutions
            solve,                # overloaded function to solve riemann problems
            find_xs_first_guess,  # helper function to find initial guess for shock compression
 
-           get_sedov_solution    # wrapper function to get sedov data and ideal solution from snapshot
+           SedovData,
+           get_sedov_solution,    # function to get sedov data and ideal solution from sedovdata
+           get_sedov_data_from_gadget,
+           get_sedov_solution_from_gadget
+
 
 
 end # module
