@@ -1,10 +1,13 @@
 using AnalyticMHDTestSolutions, Test
 
+
 @testset "Riemann Sod-Shock" begin
 
     par = RiemannParameters(Ul=100.0, Mach=10.0, t=1.5)
 
-    sol = solve([86.0], par)
+    x = collect(50.0:0.01:100.0)
+
+    sol = solve(x, par)
 
     @test sol.rho3 ≈ 0.37667409437005994
     @test sol.rho4 ≈ 0.4854368932038835
@@ -16,7 +19,9 @@ end
 
     par = RiemannParameters(Pl=63.400, Pr=0.1, Mach=10.0, dsa_model=4, t=1.5)
 
-    sol = solve([86.0], par)
+    x = collect(50.0:0.01:100.0)
+
+    sol = solve(x, par)
 
     @test sol.rho3    ≈ 0.3699882303652922
     @test sol.rho4    ≈ 0.5925766595991485
@@ -27,7 +32,7 @@ end
 
 @testset "DSA models" begin
 
-    #@test_warn "Invalid DSA model selection!" RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=5, t = 1.5)
+    @test_throws ErrorException("Invalid DSA model selection!") RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=5, t = 1.5)
 
     # KR07
     par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=0, t = 1.5)
@@ -47,4 +52,5 @@ end
     # Pfrommer+16
     par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=4, t = 1.5)
     @test par.acc_function(5.0) == 0.5
+
 end
