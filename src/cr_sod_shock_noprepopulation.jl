@@ -465,15 +465,15 @@ function solveSodShockCR_noPrepopulation(x::Array{Float64,1}; par::SodCRParamete
     sol.vs = solveVs(par, sol)
     sol.vt = solveVt(par, sol)
 
-    for i=1:length(sol.x)
+    @inbounds @simd for i=1:length(sol.x)
         sol.v[i] = solveV(x_in[i], par, sol)
     end
 
-    for i = 1:length(sol.x)
+    @inbounds @simd for i = 1:length(sol.x)
         sol.P_tot[i], sol.P_th[i], sol.P_cr[i], sol.P_cr_p[i], sol.P_cr_e[i] = solveP(x_in[i], par, sol)
     end
 
-    for i = 1:length(sol.x)
+    @inbounds @simd for i = 1:length(sol.x)
         sol.rho[i] = solveRho(x_in[i], par, sol)
     end
 

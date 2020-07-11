@@ -373,18 +373,18 @@ function solveSodShock(x::Array{Float64,1}; par::SodParameters)
     sol.v34 = solveV34(par, sol)
     sol.vs = solveVs(par, sol)
     sol.vt = solveVt(par, sol)
-    for i = 1:N
+    @inbounds @simd for i = 1:N
         sol.v[i] = solveV(x_in[i], par, sol)
     end
 
-    for i = 1:N
+    @inbounds @simd for i = 1:N
         sol.P[i] = solveP(x_in[i], par, sol)
     end
 
     # solve density
 
 
-    for i = 1:N
+    @inbounds @simd for i = 1:N
         sol.rho[i] = solveRho(x_in[i], par, sol)
     end
 
