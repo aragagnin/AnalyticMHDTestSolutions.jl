@@ -1,7 +1,7 @@
-using Roots
-using Distributions
-using NLsolve
-using QuadGK
+#using Roots
+#using Distributions
+#using NLsolve
+#using QuadGK
 #using ForwardDiff
 #using SpecialFunctions
 #include("cr_sod_shock_main.jl")
