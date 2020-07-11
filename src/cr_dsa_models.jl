@@ -71,11 +71,3 @@ end
 function P16_acc(M::Float64)
     return 0.5
 end
-
-
-"""
-    fallback:
-"""
-function null_acc(M::Float64)
-    return 0.0
-end
