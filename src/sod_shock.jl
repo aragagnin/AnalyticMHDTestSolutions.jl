@@ -96,7 +96,7 @@ end
 """
     Datatypes for IC Parameters and Solution
 """
-mutable struct SodParameters
+struct SodParameters
 
     rhol::Float64           # denisty left
     rhor::Float64           # density right
@@ -261,9 +261,6 @@ function solveP(x::Float64, par::SodParameters, sol::SodHydroSolution)
         return sol.P34
     elseif sol.vs * par.t < x
         return par.Pr
-    else
-        println("Error!")
-        return 0.0
     end
 end
 
@@ -302,9 +299,6 @@ function solveRho(x::Float64, par::SodParameters, sol::SodHydroSolution)
         return sol.rho4
     elseif sol.vs * par.t < x
         return par.rhor
-    else
-        println("Error!")
-        return 0.0
     end
 end
 
@@ -341,9 +335,6 @@ function solveV(x::Float64, par::SodParameters, sol::SodHydroSolution)
     elseif -sol.vt * par.t < x <= sol.vs * par.t
         return sol.v34
     elseif sol.vs * par.t < x
-        return 0.0
-    else
-        println("Error!")
         return 0.0
     end
 end

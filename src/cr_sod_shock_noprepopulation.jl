@@ -2,7 +2,7 @@
 
 using Roots
 
-mutable struct SodCRParameters_noCRs
+struct SodCRParameters_noCRs
 
     rhol::Float64
     rhor::Float64
@@ -333,9 +333,6 @@ function solveP(x::Float64, par::SodCRParameters_noCRs, sol::SodCRSolution)
                0.0,
                0.0,
                0.0
-    else
-        println("Error!")
-        return 0.0, 0.0, 0.0, 0.0, 0.0
     end
 end
 
@@ -384,9 +381,6 @@ function solveRho(x::Float64, par::SodCRParameters_noCRs, sol::SodCRSolution)
         return sol.rho4
     elseif sol.vs * par.t < x
         return par.rhor
-    else
-        println("Error!")
-        return 0.0
     end
 end
 
@@ -423,9 +417,6 @@ function solveV(x::Float64, par::SodCRParameters_noCRs, sol::SodCRSolution)
     elseif -sol.vt * par.t < x <= sol.vs * par.t
         return sol.v34
     elseif sol.vs * par.t < x
-        return 0.0
-    else
-        println("Error!")
         return 0.0
     end
 end
