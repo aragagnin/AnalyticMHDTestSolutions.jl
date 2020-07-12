@@ -13,6 +13,20 @@ using AnalyticMHDTestSolutions, Test
     @test sol.rho4 ≈ 0.4854368932038835
     @test sol.P34  ≈ 13.097397114653086
 
+    # parameter tests
+    @test_nowarn par = RiemannParameters(Pl=100.0, Mach=10.0, t=1.5)
+    #@test_nowarn par = RiemannParameters(Pr=1.0, Mach=10.0, t=1.5)
+    #@test_nowarn par = RiemannParameters(Ur=1.0, Mach=10.0, t=1.5)
+
+    #@test_throws ErrorException("No initial Pressure or energy values given!") par = RiemannParameters(Mach=10.0, t=1.5)
+
+    #@test_nowarn par = RiemannParameters(Pr=1.0, Mach=10.0, t=1.5)
+   
+    #@test_throws ErrorException("Ur, Pr and Mach are zero! Can't find solution!") par = RiemannParameters(Ul=100.0, t=1.5)
+    #@test_throws ErrorException("Ul, Pl and Mach are zero! Can't find solution!") par = RiemannParameters(Ur=1.0, t=1.5)
+
+    @test_nowarn par = RiemannParameters(Ul=100.0, Ur=1.0, t=1.5)
+
 end
 
 @testset "Riemann CR-Shock" begin
