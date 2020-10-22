@@ -193,6 +193,112 @@ function get_sedov_data_from_gadget(fi::String, blast_center::Vector{Float64}=[3
 
 end
 
+function get_sedov_data_from_arepo(fi::String, blast_center::Vector{Float64}=[3.0, 3.0, 3.0];
+                                      CRs=false, Nbins::Int64=0)
+
+    h = head_to_obj(fi)
+
+    t = h.time
+    m = h.massarr[1]
+
+    x = read_block_by_name(fi, "POS", parttype=0)
+
+    r = @. sqrt( (x[:,1] - blast_center[1])^2 +
+                 (x[:,2] - blast_center[2])^2 +
+                 (x[:,3] - blast_center[3])^2 )
+
+    k = sortperm(r)
+
+    r = Float32.(r[k])
+
+    v = read_block_by_name(fi, "VEL", parttype=0)[k,:]
+
+    vr = @. sqrt( v[:,1]^2 + v[:,2]^2 + v[:,3]^2 )
+
+    rho = read_block_by_name(fi, "RHO", parttype=0)[k, 1]
+
+    U = read_block_by_name(fi, "U", parttype=0)[k, 1]
+
+    hsml = read_block_by_name(fi, "HSML", parttype=0)[k, 1]
+
+    try
+        mach = read_block_by_name(fi, "MACH", parttype=0)[k, 1]
+    catch
+        mach = zeros(Float32, length(U))
+    end
+
+    if CRs
+        CRpP = read_block_by_name(fi, "CRpP", parttype=0)[k, 1]
+        Ecr = @. CRpP/(1.0/3.0 * rho)
+        γ = 7.0/5.0
+    else
+        CRpP = zeros(Float32, length(U))
+        Ecr = zeros(Float32, length(U))
+        γ = 5.0/3.0
+    end
+
+    E = sum( @. (Ecr * m + U * m + 0.5 * m * vr^2) )
+
+    if Nbins != 0
+        N = length(r)
+
+        rbinwidth = maximum(r)/Nbins
+        r_raw    = r
+        v_raw    = vr
+        rho_raw  = rho
+        U_raw    = U
+        CRpP_raw = CRpP
+        hsml_raw  = hsml
+        mach_raw  = mach
+
+        r     = zeros(Float32, Nbins+1)
+        vr    = zeros(Float32, Nbins+1)
+        rho   = zeros(Float32, Nbins+1)
+        U     = zeros(Float32, Nbins+1)
+        CRpP  = zeros(Float32, Nbins+1)
+        hsml  = zeros(Float32, Nbins+1)
+        mach  = zeros(Float32, Nbins+1)
+        Npart = zeros(Float32, Nbins+1)
+
+        @showprogress "Binning..." for i = 1:N
+            bin = floor(Int64, r_raw[i]/rbinwidth) + 1
+
+            vr[bin]     += v_raw[i]
+            rho[bin]    += rho_raw[i]
+            U[bin]      += U_raw[i]
+            CRpP[bin]   += CRpP_raw[i]
+            hsml[bin]  += hsml_raw[i]
+            mach[bin]  += mach_raw[i]
+            Npart[bin]  += 1
+        end
+
+        for i = 1:(Nbins+1)
+            r[i] = (i-1) * rbinwidth
+            vr[i]   /= Npart[i]
+            rho[i]  /= Npart[i]
+            U[i]    /= Npart[i]
+            CRpP[i] /= Npart[i]
+            mach[i] /= Npart[i]
+            hsml[i] /= Npart[i]
+        end
+
+    end
+
+    k = findall(isnan.(rho))
+
+    deleteat!(r, k)
+    deleteat!(vr, k)
+    deleteat!(rho, k)
+    deleteat!(U, k)
+    deleteat!(CRpP, k)
+    deleteat!(hsml, k)
+    deleteat!(mach, k)
+
+
+    return SedovData(t, m, r, vr, rho, U, CRpP, E, hsml, mach, γ=γ)
+
+end
+
 function get_sedov_solution_from_gadget(filename::String, blast_center::Vector{Float64}=[3.0, 3.0, 3.0];
                             CRs::Bool=false, Nbins::Int64=0, Ndim::Int64=3)
 
