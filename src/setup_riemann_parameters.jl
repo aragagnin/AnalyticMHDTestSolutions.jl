@@ -43,7 +43,7 @@ function RiemannParameters(;rhol::Float64=1.0, rhor::Float64=0.125,      # densi
                             theta_crit::Float64=(π/4.0),                 # critical angle for B/Shock angle efficiency
                             dsa_model::Int64=-1,                         # diffuse shock acceleration model
                             xs_first_guess::Float64=4.7,                 # first guess of the resulting shock compression
-                            verbose::Bool=true)
+                            verbose::Bool=false)
 
 
     # Error handling
@@ -140,7 +140,7 @@ function find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
 
     xs_first_guess = xs_start
     p = RiemannParameters(Ul=Ul, Mach=Mach,
-                          t=1.5)
+                          t=1.5, verbose=verbose)
 
     while true
         if verbose
