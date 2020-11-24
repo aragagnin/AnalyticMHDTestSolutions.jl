@@ -5,13 +5,13 @@
 """
     Kang&Ryu 2007, http://arxiv.org/abs/0704.1521v1
 """
-@inline function kr_fitting_function(M::Float64, p::Array{Float64,1})
+@inline function kr_fitting_function(M::Real, p::Array{<:Real,1})
     mm = M - 1.0
     m2 = M * M
     return ( p[1] + p[2]*mm + p[3]*mm*mm + p[4]*mm*mm*mm + p[5]*mm*mm*mm*mm ) / (m2*m2)
 end
 
-function KR07_acc(M::Float64)
+function KR07_acc(M::Real)
     if M <= 2.0
         return 1.96e-3*(M*M - 1.)             # eq. A3
     else
@@ -22,7 +22,7 @@ end
 """
     Kang&Ryu 2013, doi:10.1088/0004-637X/764/1/95
 """
-function KR13_acc(M::Float64)
+function KR13_acc(M::Real)
 
     if M < 2.0
         return 0.0
@@ -43,7 +43,7 @@ end
     Ryu et al. 2019, https://arxiv.org/abs/1905.04476
     values for 2.25 < M <= 5.0 extrapolated to entire range
 """
-function Ryu19_acc(M::Float64)
+function Ryu19_acc(M::Real)
 
     if M < 2.25
         return 0.0
@@ -60,7 +60,7 @@ end
 """
     Caprioli&Spitkovsky 2015,
 """
-function CS14_acc(M::Float64)
+function CS14_acc(M::Real)
     vazza_factor = 0.5
     return vazza_factor * KR13_acc(M)
 end
@@ -68,6 +68,6 @@ end
 """
     Constant efficiency as in Pfrommer+ 2016
 """
-function P16_acc(M::Float64)
+function P16_acc(M::Real)
     return 0.5
 end
