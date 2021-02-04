@@ -60,6 +60,7 @@ struct SedovParameters
     t::Float64
     E::Float64
     rho_out::Float64
+    P_out::Float64
     rho_s::Float64
     cs_out::Float64
     γ::Float64
@@ -73,7 +74,7 @@ struct SedovParameters
         cs_out = √( γ * P_out / rho_background )
 
         new(Int64(Ndim), Float64(time), Float64(Etot), Float64(rho_background),
-            Float64(rho_s), Float64(cs_out), Float64(γ))
+            Float64(P_out), Float64(rho_s), Float64(cs_out), Float64(γ))
     end
 end
 

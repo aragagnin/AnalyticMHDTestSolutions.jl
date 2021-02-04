@@ -29,12 +29,12 @@ function rho_analytic(xi::Real, data::SedovParameters, fit::SedovFit)
     end
 end
 
-function P_analytic(xi::Real, Pₛ::Real, fit::SedovFit)
+function P_analytic(xi::Real, Pₛ::Real, P_out::Real, fit::SedovFit)
 
     if xi < 1.0
         return Pₛ * fit.P(xi)
     else
-        return 0.0
+        return P_out
     end
 end
 
@@ -63,7 +63,7 @@ function get_sedov_solution(r::Vector{<:Real}, par::SedovParameters, fit::SedovF
     for i = 1:N
         xi = r[i]/rₛ
         rho[i] = rho_analytic(xi, par, fit)
-        P[i]   = P_analytic(xi, Pₛ, fit)
+        P[i]   = P_analytic(xi, Pₛ, par.P_out, fit)
         v[i]   = v_analytic(xi, vₛ, fit)
     end
 
@@ -310,9 +310,9 @@ function get_sedov_solution_from_gadget(filename::String, blast_center::Vector{F
         γ=5.0/3.0
     end
 
-    firstbin = Int(floor(length(sedov_data.rho) * 0.99)-1)
+    firstbin = Int(floor(size(sedov_data.rho,1) * 0.99)-1)
 
-    U_out   = mean( sedov_data.U[ firstbin:end ] )
+    U_out   = median( sedov_data.U[ firstbin:end ] )
 
     sedov_par = SedovParameters(sedov_data.t, sedov_data.E, 
                              U_out, sedov_data.rho_out,
