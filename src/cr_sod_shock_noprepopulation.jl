@@ -20,22 +20,22 @@ struct SodCRParameters_noCRs
     γ_cr::Float64
     γ_exp::Float64
     η2::Float64
-    acc_function
+    acc_function::Function
     ξ::Float64
     first_guess::Float64
 
     function SodCRParameters_noCRs(;rhol::Float64=1.0,  rhor::Float64=0.125,
-                                Pl::Float64=0.0,    Pr::Float64=0.0,
-                                Ul::Float64=0.0,    Ur::Float64=0.0,
-                                Mach::Float64=0.0,  t::Float64,
-                                x_contact::Float64=70.0,
-                                Pe_ratio::Float64=0.01,
-                                γ_th::Float64=5.0/3.0,
-                                γ_cr::Float64=4.0/3.0,
-                                thetaB::Float64=0.0,
-                                theta_crit::Float64=(π/4.0),
-                                dsa_model::Int64=-1,
-                                xs_first_guess::Float64=4.7)
+                                    Pl::Float64=0.0,    Pr::Float64=0.0,
+                                    Ul::Float64=0.0,    Ur::Float64=0.0,
+                                    Mach::Float64=0.0,  t::Float64,
+                                    x_contact::Float64=70.0,
+                                    Pe_ratio::Float64=0.01,
+                                    γ_th::Float64=5.0/3.0,
+                                    γ_cr::Float64=4.0/3.0,
+                                    thetaB::Float64=0.0,
+                                    theta_crit::Float64=(π/4.0),
+                                    dsa_model::Int64=-1,
+                                    xs_first_guess::Float64=4.7)
 
         γ_exp    = ( γ_th - 1.0 )/( 2.0 * γ_th )
         η2       = (γ_th-1.0)/(γ_th+1.0)
@@ -62,7 +62,6 @@ struct SodCRParameters_noCRs
             acc_function = P16_acc
         else
             error("Invalid DSA model selection!")
-
         end
 
         # calculate Ur and Pr depending on input
@@ -236,7 +235,7 @@ end
     Shared functions
 """
 function get_ξ(acc_function, M::Float64)
-    return ξ = acc_function(M)/(1.0 - acc_function(M))
+    return acc_function(M)/(1.0 - acc_function(M))
 end
 
 function xs_f(rho4::Float64, rhor::Float64)
@@ -425,7 +424,6 @@ end
 """
     Main function for solver
 """
-
 function solveSodShockCR_noPrepopulation(x::Array{Float64,1}; par::SodCRParameters_noCRs)
 
     # set up datatype to store riemann solution
