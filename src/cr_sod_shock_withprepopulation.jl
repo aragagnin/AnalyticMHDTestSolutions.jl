@@ -1,7 +1,7 @@
 #using Roots
 #using Distributions
-#using NLsolve
-#using QuadGK
+using NLsolve
+using QuadGK
 #using ForwardDiff
 #using SpecialFunctions
 #include("cr_sod_shock_main.jl")
@@ -32,8 +32,7 @@ mutable struct SodCRParameters_withCRs
     α::Float64
     β::Float64
     η2::Float64
-    # acc_function#::F
-    # reacc_function
+    acc_function::Function
 
     function SodCRParameters_withCRs(;rhol::Float64=1.0,  rhor::Float64=0.125,
                                 Pl::Float64=0.0,    Pr::Float64=0.0,
@@ -68,13 +67,15 @@ mutable struct SodCRParameters_withCRs
         if eff_model == -1
             acc_function = null_acc
         elseif eff_model == 0
-            acc_function = KR07
+            acc_function = KR07_acc
         elseif eff_model == 1
-            acc_function = KR13
+            acc_function = KR13_acc
         elseif eff_model == 2
-            acc_function = R_19
+            acc_function = Ryu19_acc
         elseif eff_model == 3
-            acc_function = CS15
+            acc_function = CS14_acc
+        elseif eff_model == 4
+            acc_function = P16_acc
         else
             error("Invalid DSA model selection!\n
                    Pick one of the available models, or solve a pure Hydro shock with:\n
@@ -100,8 +101,8 @@ mutable struct SodCRParameters_withCRs
         # end
 
 
-        cl = sqrt.(γ_eff(Pl, P_cr_l, γ_th, γ_cr) * (Pl + P_cr_l) / rhol)
-        cr = sqrt.(γ_eff(Pr, P_cr_r, γ_th, γ_cr) * (Pr + P_cr_r) / rhor)
+        cl = sqrt(γ_eff(Pl, P_cr_l, γ_th, γ_cr) * (Pl + P_cr_l) / rhol)
+        cr = sqrt(γ_eff(Pr, P_cr_r, γ_th, γ_cr) * (Pr + P_cr_r) / rhor)
 
         α = (γ_cr - 1.0)/(2.0 * Δγ)
         β = (1.0 - γ_th)/(2.0 * Δγ)
@@ -121,9 +122,8 @@ mutable struct SodCRParameters_withCRs
             Δγ,
             γ_exp,
             α, β,
-            η2)#,
-            #acc_function,
-            #acc_function)
+            η2,
+            acc_function)
     end
 end
 
@@ -142,7 +142,7 @@ end
 
 
 
-@inline function reduced_Beta(x, α, β)
+@inline function reduced_Beta(x::Float64, α::Float64, β::Float64)
     return 1.0/beta(α, β) * x^(α - 1.0) * ( 1.0 - x )^(β - 1.0)
 end
 
@@ -291,7 +291,7 @@ end
 """
 function solveV34(par::SodCRParameters_withCRs, sol::SodCRSolution)
     # solves velocity along the isopressure region 2-3
-    return sqrt.( (sol.P34_tot - (par.Pr + par.P_cr_r ) ) * (sol.rho4 - par.rhor)/sol.rho4*par.rhor )
+    return sqrt( (sol.P34_tot - (par.Pr + par.P_cr_r ) ) * (sol.rho4 - par.rhor)/sol.rho4*par.rhor )
 end
 
 function solveV2(x::Float64, par::SodCRParameters_withCRs)
