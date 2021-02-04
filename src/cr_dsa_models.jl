@@ -71,3 +71,11 @@ end
 function P16_acc(M::Real)
     return 0.5
 end
+
+
+"""
+    null_acc
+"""
+function null_acc(M::Real)
+    return 0.0
+end
