@@ -97,44 +97,44 @@ function get_sedov_data_from_gadget(fi::String, blast_center::Vector{Float64}=[3
 
     x = read_block(fi, "POS", parttype=0)
 
-    r = @. sqrt( (x[:,1] - blast_center[1])^2 +
-                 (x[:,2] - blast_center[2])^2 +
-                 (x[:,3] - blast_center[3])^2 )
+    r = @views @. √( (x[1,:] - blast_center[1])^2 +
+                     (x[2,:] - blast_center[2])^2 +
+                     (x[3,:] - blast_center[3])^2 )
 
     k = sortperm(r)
 
     r = Float32.(r[k])
 
-    v = read_block(fi, "VEL", parttype=0)[k,:]
+    v = read_block(fi, "VEL", parttype=0)[:,k]
 
-    vr = @. sqrt( v[:,1]^2 + v[:,2]^2 + v[:,3]^2 )
+    vr = @views @. sqrt( v[1,:]^2 + v[2,:]^2 + v[3,:]^2 )
 
-    rho = read_block(fi, "RHO", parttype=0)[k, 1]
+    rho = read_block(fi, "RHO", parttype=0)[k]
 
-    U = read_block(fi, "U", parttype=0)[k, 1]
+    U = read_block(fi, "U", parttype=0)[k]
 
-    hsml = read_block(fi, "HSML", parttype=0)[k, 1]
+    hsml = read_block(fi, "HSML", parttype=0)[k]
 
     try
-        mach = read_block(fi, "MACH", parttype=0)[k, 1]
+        mach = read_block(fi, "MACH", parttype=0)[k]
     catch
-        mach = zeros(Float32, length(U))
+        mach = zeros(Float32, size(U,1))
     end
 
     if CRs
-        CRpP = read_block(fi, "CRpP", parttype=0)[k, 1]
+        CRpP = read_block(fi, "CRpP", parttype=0)[k]
         Ecr = @. CRpP/(1.0/3.0 * rho)
         γ = 7.0/5.0
     else
-        CRpP = zeros(Float32, length(U))
-        Ecr = zeros(Float32, length(U))
+        CRpP = zeros(Float32, size(U,1))
+        Ecr = zeros(Float32, size(U,1))
         γ = 5.0/3.0
     end
 
     E = sum( @. (Ecr * m + U * m + 0.5 * m * vr^2) )
 
     if Nbins != 0
-        N = length(r)
+        N = size(r,1)
 
         rbinwidth = maximum(r)/Nbins
         r_raw    = r
@@ -188,7 +188,6 @@ function get_sedov_data_from_gadget(fi::String, blast_center::Vector{Float64}=[3
     deleteat!(hsml, k)
     deleteat!(mach, k)
 
-
     return SedovData(t, m, r, vr, rho, U, CRpP, E, hsml, mach, γ=γ)
 
 end
@@ -203,32 +202,32 @@ function get_sedov_data_from_arepo(fi::String, blast_center::Vector{Float64}=[3.
 
     x = read_block_by_name(fi, "POS", parttype=0)
 
-    r = @. sqrt( (x[:,1] - blast_center[1])^2 +
-                 (x[:,2] - blast_center[2])^2 +
-                 (x[:,3] - blast_center[3])^2 )
+    r = @. sqrt( (x[1,:] - blast_center[1])^2 +
+                 (x[2,:] - blast_center[2])^2 +
+                 (x[3,:] - blast_center[3])^2 )
 
     k = sortperm(r)
 
     r = Float32.(r[k])
 
-    v = read_block_by_name(fi, "VEL", parttype=0)[k,:]
+    v = read_block_by_name(fi, "VEL", parttype=0)[:,k]
 
-    vr = @. sqrt( v[:,1]^2 + v[:,2]^2 + v[:,3]^2 )
+    vr = @. sqrt( v[1,:]^2 + v[2,:]^2 + v[3,:]^2 )
 
-    rho = read_block_by_name(fi, "RHO", parttype=0)[k, 1]
+    rho = read_block_by_name(fi, "RHO", parttype=0)[k]
 
-    U = read_block_by_name(fi, "U", parttype=0)[k, 1]
+    U = read_block_by_name(fi, "U", parttype=0)[k]
 
-    hsml = read_block_by_name(fi, "HSML", parttype=0)[k, 1]
+    hsml = read_block_by_name(fi, "HSML", parttype=0)[k]
 
     try
-        mach = read_block_by_name(fi, "MACH", parttype=0)[k, 1]
+        mach = read_block_by_name(fi, "MACH", parttype=0)[k]
     catch
         mach = zeros(Float32, length(U))
     end
 
     if CRs
-        CRpP = read_block_by_name(fi, "CRpP", parttype=0)[k, 1]
+        CRpP = read_block_by_name(fi, "CRpP", parttype=0)[k]
         Ecr = @. CRpP/(1.0/3.0 * rho)
         γ = 7.0/5.0
     else
