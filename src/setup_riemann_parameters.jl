@@ -163,11 +163,15 @@ function find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
             break
         catch
             xs_first_guess += delta_xs
+            if xs_first_guess > 6.0
+                error("no convergence found!")
+            end
         end
 
     end
     return xs_first_guess
 end
+
 
 
 """
