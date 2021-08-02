@@ -51,22 +51,22 @@ using AnalyticMHDTestSolutions, Test
 
         # KR07
         par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=0, t = 1.5)
-        @test par.acc_function(5.0) ≈ 0.25185919999999995
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model, 5.0, 0.0) ≈ 0.25216639999999996
         # KR13
         par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=1, t = 1.5)
-        @test par.acc_function( 5.0) ≈ 0.09999999999999998
-        @test par.acc_function(10.0) ≈ 0.19631644350722818
-        @test par.acc_function(25.0) ≈ 0.21152
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model,  5.0, 0.0) ≈ 0.09999999999999998
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model, 10.0, 0.0) ≈ 0.19631644350722818
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model, 25.0, 0.0) ≈ 0.2055
         # Ryu+19
         par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=2, t = 1.5)
-        @test par.acc_function( 5.0) ≈ 0.017286554080677037
-        @test par.acc_function(55.0) ≈ 0.0348
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model,  5.0, 0.0) ≈ 0.01729296
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model, 55.0, 0.0) ≈ 0.0348
         # CS14
         par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=3, t = 1.5)
-        @test par.acc_function(5.0) ≈ 0.04999999999999999
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model, 5.0, 0.0) ≈ 0.04999999999999999
         # Pfrommer+16
         par = RiemannParameters( Ul = 100.0, Ur = 0.1, dsa_model=4, t = 1.5)
-        @test par.acc_function(5.0) == 0.5
+        @test AnalyticMHDTestSolutions.calc_η_Ms(par.acc_model, 5.0, 0.0) == 0.5
 
     end
 
