@@ -358,7 +358,7 @@ function calc_η_Ms(η_model::ShockAccelerationEfficiency, M::T, X::T) where T
     η_tot::T = η1 + (X - X1) * (η2 - η1) / (X2 - X1)
 
     # check if η_tot is smaller than the maximum efficiancy
-    if η_tot > η_model.η_max
+    if η_tot > η_model.η_max || isnan(η_tot)
         return η_model.η_max
     else
         return η_tot
