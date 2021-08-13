@@ -3,7 +3,7 @@
 using NLsolve
 using QuadGK
 #using ForwardDiff
-#using SpecialFunctions
+using SpecialFunctions
 #include("cr_sod_shock_main.jl")
 #include("beta_inc_functions.jl")
 
@@ -32,23 +32,26 @@ mutable struct SodCRParameters_withCRs
     α::Float64
     β::Float64
     η2::Float64
-    acc_function::Function
+    ζ::Float64 
+    ξ::Float64
 
-    function SodCRParameters_withCRs(;rhol::Float64=1.0,  rhor::Float64=0.125,
-                                Pl::Float64=0.0,    Pr::Float64=0.0,
-                                Ul::Float64=0.0,    Ur::Float64=0.0,
-                                P_cr_l::Float64=0.0,      P_cr_r::Float64=0.0,
-                                E_cr_l::Float64=0.0,      E_cr_r::Float64=0.0,
-                                Mach::Float64=0.0,  t::Float64,
+    function SodCRParameters_withCRs(;rhol::Float64=1.0, rhor::Float64=0.125,
+                                Pl::Float64=0.0,         Pr::Float64=0.0,
+                                Ul::Float64=0.0,         Ur::Float64=0.0,
+                                P_cr_l::Float64=0.0,     P_cr_r::Float64=0.0,
+                                E_cr_l::Float64=0.0,     E_cr_r::Float64=0.0,
+                                Mach::Float64=0.0,       t::Float64,
                                 x_contact::Float64=70.0,
                                 Pe_ratio::Float64=0.01,
+                                thetaB::Float64=0.0,
+                                theta_crit::Float64=0.25π,
+                                dsa_model::Int64=-1,
                                 γ_th::Float64=5.0/3.0,
-                                γ_cr::Float64=4.0/3.0,
-                                eff_model::Int64=-1)
+                                γ_cr::Float64=4.0/3.0 )
 
         γ_exp    = ( γ_th - 1.0 )/( 2.0 * γ_th )
-        η2       = (γ_th-1.0)/(γ_th+1.0)
-        Δγ       = γ_th - γ_cr
+        η2       = ( γ_th - 1.0 )/( γ_th + 1.0 )
+        Δγ       =   γ_th - γ_cr
 
         # calculate Ul and Pl depending on input
         if (Pl == 0.0) & (Ul != 0.0)
@@ -59,28 +62,23 @@ mutable struct SodCRParameters_withCRs
             error("Both Ul and Pl are zero!")
         end
 
-        # calculate B angle dependent efficiency following Pais+ 2018, MNRAS, 478, 5278
-        # delta_theta = π/18.0
-        # thetaB *= (π/180)
-        # etaB = 0.5*( tanh( (theta_crit - thetaB)/delta_theta ) + 1.0 )
-
-        if eff_model == -1
-            acc_function = null_acc
-        elseif eff_model == 0
-            acc_function = KR07_acc
-        elseif eff_model == 1
-            acc_function = KR13_acc
-        elseif eff_model == 2
-            acc_function = Ryu19_acc
-        elseif eff_model == 3
-            acc_function = CS14_acc
-        elseif eff_model == 4
-            acc_function = P16_acc
+        # selection of DSA model structs
+        if dsa_model == 0
+            acc_model = KR07()
+        elseif dsa_model == 1
+            acc_model = KR13()
+        elseif dsa_model == 2
+            acc_model = Ryu19()
+        elseif dsa_model == 3
+            acc_model = CS14()
+        elseif dsa_model == 4
+            acc_model = P16()
+        elseif dsa_model == 5
+            acc_model = NullAcc()
         else
             error("Invalid DSA model selection!\n
                    Pick one of the available models, or solve a pure Hydro shock with:\n
                    SodParameters")
-
         end
 
         # calculate Ur and Pr depending on input
@@ -92,7 +90,7 @@ mutable struct SodCRParameters_withCRs
             println("Error! Ur, Pr and Mach are zero! Can't find solution!")
         else
             println("Both Ur and Pr are zero! Will calculate them depending on Machnumber.")
-            Pr = solvePrfromMach(rhol, rhor, Pl, Mach, γ_th, γ_cr, eff_function)
+            Pr = solvePrfromMach(rhol, rhor, Pl, Mach, γ_th, γ_cr, acc_model)
             Ur = Pr / ( (γ_th - 1.0) * rhor )
         end
         #
@@ -101,19 +99,33 @@ mutable struct SodCRParameters_withCRs
         # end
 
 
-        cl = sqrt(γ_eff(Pl, P_cr_l, γ_th, γ_cr) * (Pl + P_cr_l) / rhol)
-        cr = sqrt(γ_eff(Pr, P_cr_r, γ_th, γ_cr) * (Pr + P_cr_r) / rhor)
+        # cl = √(γ_eff(Pl, P_cr_l, γ_th, γ_cr) * (Pl + P_cr_l) / rhol)
+        # cr = √(γ_eff(Pr, P_cr_r, γ_th, γ_cr) * (Pr + P_cr_r) / rhor)
+
+        cl = √( ( γ_th *  Pl + γ_cr * P_cr_l ) / rhol )
+        cr = √( ( γ_th *  Pr + γ_cr * P_cr_r ) / rhor )
 
         α = (γ_cr - 1.0)/(2.0 * Δγ)
         β = (1.0 - γ_th)/(2.0 * Δγ)
 
         E_cr_r = P_cr_r/( ( γ_cr - 1.0 )*rhor )
+        E_cr_l = P_cr_l/( ( γ_cr - 1.0 )*rhol )
+
+        # calculate B angle dependent efficiency following Pais+ 2018, MNRAS, 478, 5278
+        delta_theta = π/18.0
+        thetaB *= (π/180.0)
+        etaB = 0.5*( tanh( (theta_crit - thetaB)/delta_theta ) + 1.0 )
+
+        Xcr = P_cr_r/Pr
+        ζ = etaB*calc_η_Ms(acc_model, Mach, Xcr)
+
+        ξ = ζ/(1.0 - ζ)
 
         new(rhol, rhor,
             Pl, Pr,
-            P_cr_l, P_cr_r,
             Ul, Ur,
-            E_cr_r,
+            P_cr_l, P_cr_r,
+            E_cr_l, E_cr_r,
             cl, cr,
             Mach, t,
             x_contact,
@@ -123,7 +135,7 @@ mutable struct SodCRParameters_withCRs
             γ_exp,
             α, β,
             η2,
-            acc_function)
+            ζ, ξ)
     end
 end
 
@@ -133,42 +145,114 @@ end
         Integral function
 """
 
-@inline A(P::Float64, ρ::Float64, γ::Float64) = γ * P * ρ^(-γ)
-@inline a(P::Float64, γ::Float64) = γ * P
+"""
+    A(P::Float64, ρ::Float64, γ::Float64
 
-@inline function x(ρ::Float64, P_th::Float64, P_cr::Float64, par::SodCRParameters_withCRs)
-    return  a(P_th, par.γ_th)/(a(P_th, par.γ_th) + a(P_cr, par.γ_cr))
+Entropy of gas (CP+16)
+"""
+@inline A(P::T, ρ::T, γ::Float64) where T = P * ρ^(-γ)
+
+"""
+    Ã(P::Float64, ρ::Float64, γ::Float64)
+
+Entropy times adiabatic index (CP+16, after Eq. (C3) ).
+"""
+@inline Ã(P::T, ρ::T, γ::Float64) where T = γ * A(P, ρ, γ)
+
+"""
+    a(P::Float64, ρ::Float64, γ::Float64) 
+
+Entropy times gamma times rho^gamma.
+"""
+@inline a(P::T, ρ::T, γ::Float64) where T = Ã(P, ρ, γ) * ρ^γ
+
+"""
+    x_func(ρ::Float64, P_th::Float64, P_cr::Float64, par::SodCRParameters_withCRs)
+
+Base for incomplete gamma function (CP+16, Eq. C4 ).
+"""
+@inline function x_func(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs) where T
+    return  a(P_th, ρ, par.γ_th)/(a(P_th, ρ, par.γ_th) + a(P_cr, ρ, par.γ_cr))
 end
 
 
 
-@inline function reduced_Beta(x::Float64, α::Float64, β::Float64)
+@inline function reduced_Beta(x::T, α::T, β::T) where T
     return 1.0/beta(α, β) * x^(α - 1.0) * ( 1.0 - x )^(β - 1.0)
 end
 
-@inline function γ_eff(P_th::Float64, P_cr::Float64, γ_th::Float64, γ_cr::Float64)
+@inline function γ_eff(P_th::T, P_cr::T, γ_th::T, γ_cr::T) where T
     return (γ_cr*P_cr + γ_th*P_th)/(P_th + P_cr)
 end
 
-@inline function incomplete_beta(a::Float64, b::Float64, t::Float64)
+@inline function incomplete_beta(a, b, t) 
     return t^(a-1.0) * (1.0-t)^(b-1.0)
 end
 
-@inline function I(rho::Float64, P_th::Float64, P_cr::Float64, par::SodCRParameters_withCRs)
+"""
+    function I(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs ) where T
 
-    x_ = x(rho, P_th, P_cr,  par)
-    A_cr = A(P_cr, rho, par.γ_cr)
-    A_th = A(P_th, rho, par.γ_th)
+Simplified Integral, Eq. C4 in CP+16
+"""
+@inline function I(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs ) where T
+
+    x_   = x_func(ρ, P_th, P_cr, par)
+    Ã_cr = Ã(P_cr, ρ, par.γ_cr)
+    Ã_th = Ã(P_th, ρ, par.γ_th)
     B(x) = incomplete_beta(par.α, par.β, x)
 
-    result_B = quadgk(B, 0, x_, rtol=1.e-4)
+    result_B, result_error = quadgk(B, 0, x_, rtol=1.e-4)
 
-    return √(A_cr)/par.Δγ * (A_cr/A_th)^par.α * result_B
+    return √(Ã_cr)/par.Δγ * (Ã_cr/Ã_th)^par.α * result_B
 end
+
+# """
+#     function I(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs ) where T
+
+# Simplified Integral, Eq. C4 in CP+16
+# """
+# @inline function I(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs ) where T
+#     x_   = x_func(ρ, P_th, P_cr, par)
+#     ℬ   = reduced_Beta(x_, par.α, par.β)
+#     Ã_cr = Ã(P_cr, ρ, par.γ_cr)
+#     Ã_th = Ã(P_th, ρ, par.γ_th)
+
+#     # B(x) = incomplete_beta(par.α, par.β, x)
+
+#     # result_B, result_error = quadgk(B, 0, x_, rtol=1.e-4)
+
+
+#     return √(Ã_cr)/par.Δγ * (Ã_cr/Ã_th)^par.α * ℬ
+# end
+
+# """
+#     function I(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs ) where T
+
+# Simplified Integral, Eq. C4 in CP+16
+# """
+# @inline function I_integrated(ρ::T, P_th::T, P_cr::T, par::SodCRParameters_withCRs ) where T
+#     #x_   = x_func(ρ, P_th, P_cr, par)
+#     Ã_cr = Ã(P_cr, ρ, par.γ_cr)
+#     Ã_th = Ã(P_th, ρ, par.γ_th)
+
+#     I_in(x) = √( Ã_cr * x^(par.γ_cr-3) + Ã_th * x^(par.γ_th-3) )
+
+#     result_B, result_error = quadgk(I_in, 0, ρ, rtol=1.e-4)
+
+
+#     return result_B
+# end
+
+
 
 """
     Pressure
 """
+
+function solveP4(par::SodCRParameters_withCRs, sol::SodCRSolution)
+    1.0 / ( 1.0 + par.ζ ) * ( sol.P34_tot + par.ξ * ( par.γ_cr - 1.0 ) / ( par.γ_th - 1.0 ) * par.Pr * sol.xs^par.γ_th - par.P_cr_r * sol.xs^par.γ_th )
+end
+
 function solveP3(par::SodCRParameters_withCRs, sol::SodCRSolution)
     # Solves the pressure of the middle state in a shocktube
 
@@ -204,8 +288,8 @@ function solveP(x::Float64, par::SodCRParameters_withCRs, sol::SodCRSolution)
     elseif sol.v34 * par.t < x <= sol.vs * par.t
         return (sol.P4_th + sol.P4_cr),
                 sol.P4_th, sol.P4_cr,
-                (1.0 - par.Pe_ratio)*par.P4_cr,
-                par.Pe_ratio*par.P4_cr
+                (1.0 - par.Pe_ratio)*sol.P4_cr,
+                par.Pe_ratio*sol.P4_cr
 
     elseif sol.vs * par.t < x
         return (par.Pr + par.P_cr_r),
@@ -213,7 +297,7 @@ function solveP(x::Float64, par::SodCRParameters_withCRs, sol::SodCRSolution)
                 (1.0 - par.Pe_ratio)*par.P_cr_r,
                 par.Pe_ratio*par.P_cr_r
     else
-        println("Error! x = $x  t = $(par.t)")
+        error("Error! x = $x  t = $(par.t)")
         return 0.0, 0.0, 0.0, 0.0, 0.0
     end
 end
@@ -230,41 +314,75 @@ function solveRho2(x::Float64, par::SodCRParameters_withCRs)
 
 end
 
+"""
+    xs(ρ₄::T, ρᵣ::T) where T
+
+Compression ratio over shock.
+``x_s = \frac{ρ_4}{ρ_r}``
+"""
+xs(ρ₄::T, ρᵣ::T) where T = ρ₄/ρᵣ
+
+"""
+    xr(ρ₃::T, ρₗ::T) where T
+
+Compression ratio over rarefaction wave.
+``x_r = \\frac{ρ_3}{ρ_l}``
+"""
+xr(ρ₃::T, ρₗ::T) where T = ρ₃/ρₗ
+
 
 function rho34_solver!(F, x, par::SodCRParameters_withCRs)
 
-    xs(rho4)        = rho4/par.rhor
-    xr(rho3)        = rho3/par.rhol
+    
 
-    P34(rho3)       = par.P_cr_l*xr(rho3)^par.γ_cr + par.Pl*xr(rho3)^par.γ_th
+    xₛ  = xs(x[1], par.rhor)
+    xᵣ  = xr(x[2], par.rhol)
 
-    Pcr4(rho4)      = par.P_cr_r*xs(rho4)^par.γ_cr
+    γ_inj = 4.0/3.0 # fix!
 
-    ε2(rho4, rho3)  = par.E_cr_r*xs(rho4)^par.γ_cr + 1.0/(par.γ_th - 1.0) *
-                     ( P34(rho3) - Pcr4(rho4) )
+    # CP+16, Eq. C6
+    P₃₄ = par.P_cr_l*xᵣ^par.γ_cr + par.Pl*xᵣ^par.γ_th
 
-    Pth3(rho3)      = par.Pl * xr(rho3)^par.γ_th
-    Pcr3(rho3)      = par.P_cr_l * xs(rho3)^par.γ_cr
+    # CP+16, Eq. C7
+    ϵ_th_ad = par.Ur * xₛ^par.γ_th
 
-    F[1] = (P34(x[1]) - (par.Pr + par.P_cr_r)) * ( xs(x[2]) - 1.0 ) -
-            par.rhor * xs(x[2]) * ( I(par.rhol, par.Pl, par.P_cr_l, par) - I(x[1], Pth3(x[1]), Pcr3(x[1]), par) )^2
+    ϵ_cr4 = par.E_cr_r * xₛ^par.γ_cr
 
-    F[2] = (P34(x[1]) + (par.Pr + par.P_cr_r)) * ( xs(x[2]) - 1.0 ) +
-            2.0 * ( xs(x[2]) * (par.Ur + par.E_cr_r) - ε2(x[2], x[1]) )
+    # CP+16, Eq. C8
+    ε₄ = ( (1.0 - par.ζ) * ( par.γ_th - 1.0 ) / ( γ_inj - 1.0 ) + par.ζ)^(-1)  * 
+         ( P₃₄ / ( γ_inj - 1.0 ) + par.ξ * ϵ_th_ad - (par.γ_cr - 1.0) / ( γ_inj - 1.0 ) * ϵ_cr4 ) + 
+         ϵ_cr4 - par.ξ * ϵ_th_ad
 
+    #println("ε₄ = $ε₄")
+
+    # total energy density right 
+    ϵᵣ = par.Ur + par.E_cr_r
+
+    P_tot_r = (par.Pr + par.P_cr_r)
+
+    # CP+16, Eq. C5
+    F[1] = ( P₃₄ - P_tot_r ) * ( xₛ - 1.0 ) - 
+            par.rhor * xₛ * ( I(par.rhol, par.Pl, par.P_cr_l, par ) - 
+                I(xᵣ*par.rhol, par.Pl, par.P_cr_l, par ) )^2
+
+    F[2] = ( P₃₄ + P_tot_r ) * ( xₛ - 1.0 ) + 2*( xₛ*ϵᵣ - ε₄ )
+
+    F
 end
+
 
 function solveRho34(par::SodCRParameters_withCRs)
 
     rho34_helper!(F, x) = rho34_solver!(F, x, par)
 
-    initial_x = [par.rhol, par.rhor]
-    nlsolve(rho34_helper!, initial_x)
+    #x_guess = 0.5*(par.rhol + par.rhor)
+    initial_x = [0.5par.rhol, 0.5*par.rhol]
+    nlsolve(rho34_helper!, initial_x, method = :newton)#, autodiff = :forward)
 
         #   rho3           rho4
     return initial_x[1], initial_x[2]
-
 end
+
 
 function solveRho(x::Float64, par::SodCRParameters_withCRs, sol::SodCRSolution)
     # returns P values according to position in shocktube
@@ -280,7 +398,7 @@ function solveRho(x::Float64, par::SodCRParameters_withCRs, sol::SodCRSolution)
     elseif sol.vs * par.t < x
         return par.rhor
     else
-        println("Error!")
+        error("Solution outside simulation domain!")
         return 0.0
     end
 end
@@ -291,7 +409,7 @@ end
 """
 function solveV34(par::SodCRParameters_withCRs, sol::SodCRSolution)
     # solves velocity along the isopressure region 2-3
-    return sqrt( (sol.P34_tot - (par.Pr + par.P_cr_r ) ) * (sol.rho4 - par.rhor)/sol.rho4*par.rhor )
+    return √( (sol.P34_tot - (par.Pr + par.P_cr_r ) ) * (sol.rho4 - par.rhor)/sol.rho4*par.rhor )
 end
 
 function solveV2(x::Float64, par::SodCRParameters_withCRs)
@@ -307,7 +425,7 @@ end
 function solveVt(par::SodCRParameters_withCRs, sol::SodCRSolution)
     # solves the velocity of the tail of the rarefaction wave
     return I(sol.rho3, sol.P3_th, sol.P3_cr, par) - I(par.rhol, par.Pl, par.P_cr_l, par) +
-            sqrt.(
+            sqrt(
                 A(sol.P3_cr, sol.rho3, par.γ_cr)*sol.rho3^(par.γ_cr - 1.0) +
                 A(sol.P3_th, sol.rho3, par.γ_th)*sol.rho3^(par.γ_th - 1.0) )
 end
@@ -334,10 +452,12 @@ end
 """
 
 
-function solveSodShockCR_withPrepopulation(x::Array{Float64,1}; par::SodCRParameters_withCRs)
+function solveSodShockCR_withPrepopulation(x::Vector{Float64}; par::SodCRParameters_withCRs)
 
     # set up datatype to store riemann solution
     sol = SodCRSolution(x)
+
+    println("par.P_cr_l = $(par.P_cr_l)")
 
     # transform into rest-frame of contact discontiuity
     x_in = sol.x .- par.x_contact
@@ -345,17 +465,23 @@ function solveSodShockCR_withPrepopulation(x::Array{Float64,1}; par::SodCRParame
     # solve Pressure
     sol.rho3, sol.rho4 = solveRho34(par)
 
-
     sol.xs  = sol.rho4/par.rhor
-    sol.xr  = sol.rho3/par.rhol
+    sol.xr  = sol.rho3/par.rhol 
 
     sol.P34_tot = par.P_cr_l*sol.xr^par.γ_cr + par.Pl*sol.xr^par.γ_th
 
-    sol.P3_cr = par.P_cr_l*(sol.rho3/par.rhol)^par.γ_cr
+    sol.P3_cr = par.P_cr_l*sol.xr^par.γ_cr
     sol.P3_th = sol.P34_tot - sol.P3_cr
 
-    sol.P4_cr = par.P_cr_r*sol.xs^par.γ_cr
-    sol.P4_th = sol.P34_tot - sol.P4_cr
+    # P_inj     = P_inj_f(sol.xs, par.rhor, par.Pr, par.γ_th, par.γ_cr, par.ξ)
+    P_inj = 0.0
+    # sol.P4_cr = par.P_cr_r*sol.xs^par.γ_cr + P_inj
+    
+    sol.P4_th = solveP4(par, sol)
+    sol.P4_cr = sol.P34_tot - sol.P4_th
+
+
+    println("P_inj = $P_inj\tsol.P4_cr = $(sol.P4_cr)\tsol.P4_th = $(sol.P4_th)")
 
     # solve velocity
     sol.v34 = solveV34(par, sol)
@@ -382,19 +508,7 @@ function solveSodShockCR_withPrepopulation(x::Array{Float64,1}; par::SodCRParame
     sol.E_cr_p = sol.P_cr_p ./ ( (par.γ_cr - 1.0) .* sol.rho )
     sol.E_cr_e = sol.P_cr_e ./ ( (par.γ_cr - 1.0) .* sol.rho )
 
+    println("par.P_cr_r = $(par.P_cr_r)")
+
     return sol
 end
-
-# x_in = collect(50.0:0.01:100.0)
-#
-# Pl = 63.499
-# Pr = 0.1
-# Pcrl = 0.3*Pl
-# Pcrr = 0.3*Pr
-# par = SodCRParameters_withCRs(Pl=Pl, Pr=Pr, P_cr_l=Pcrl, P_cr_r=Pcrr, t=1.5, eff_model=-1)
-#
-# sol = solveSodShockCR_withPrepopulation(x_in, par=par)
-#
-# B(x) = incomplete_beta(par.α, par.β, x)
-#
-# result_B = quadgk(B, 0, 4.74, rtol=1.e-4)
