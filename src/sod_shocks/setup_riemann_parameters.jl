@@ -128,14 +128,14 @@ end # RiemannParameters
 """
     find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
                         xs_start::Float64=3.8, delta_xs::Float64=1.e-4,
-                        eff_model::Int64=2, thetaB::Float64=0.0,
+                        dsa_model::Int64=2, thetaB::Float64=0.0,
                         verbose::Bool=false)
 
 Iterates to a first guess of the compression ratio `xs` that gives a solution.
 """
 function find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
                              xs_start::Float64=3.8, delta_xs::Float64=1.e-4,
-                             eff_model::Int64=2, thetaB::Float64=0.0,
+                             dsa_model::Int64=2, thetaB::Float64=0.0,
                              verbose::Bool=false)
 
     xs_first_guess = xs_start
@@ -155,7 +155,7 @@ function find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
                                     P_cr_l=P_cr_l, P_cr_r=P_cr_r,
                                     thetaB = thetaB, Mach = Mach,
                                     xs_first_guess = xs_first_guess,
-                                    t=1.5, dsa_model = eff_model,
+                                    t=1.5, dsa_model = dsa_model,
                                     verbose = verbose)
 
             solve([86.0], par)
