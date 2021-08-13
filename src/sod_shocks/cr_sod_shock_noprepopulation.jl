@@ -20,7 +20,7 @@ struct SodCRParameters_noCRs
     γ_cr::Float64
     γ_exp::Float64
     η2::Float64
-    acc_function::Function
+    acc_model::ShockAccelerationEfficiency
     ξ::Float64
     first_guess::Float64
 
@@ -51,17 +51,18 @@ struct SodCRParameters_noCRs
 
 
         if dsa_model == 0
-            acc_function = KR07_acc
+            acc_model = KR07()
         elseif dsa_model == 1
-            acc_function = KR13_acc
+            acc_model = KR13()
         elseif dsa_model == 2
-            acc_function = Ryu19_acc
+            acc_model = Ryu19()
         elseif dsa_model == 3
-            acc_function = CS14_acc
+            acc_model = CS14()
         elseif dsa_model == 4
-            acc_function = P16_acc
+            acc_model = P16()
         else
             error("Invalid DSA model selection!")
+
         end
 
         # calculate Ur and Pr depending on input
@@ -76,7 +77,7 @@ struct SodCRParameters_noCRs
             Pr = solvePrfromMachCR(Pl, Pr,
                                    rhor, rhol,
                                    γ_th, γ_cr, γ_exp,
-                                   Mach, acc_function)
+                                   Mach, acc_model)
             Ur = Pr / ( (γ_th - 1.0) * rhor )
         end
 
@@ -85,18 +86,10 @@ struct SodCRParameters_noCRs
         thetaB *= (π/180.0)
         etaB = 0.5*( tanh( (theta_crit - thetaB)/delta_theta ) + 1.0 )
 
-        ξ = etaB*acc_function(Mach)/(1.0 - etaB*acc_function(Mach))
+        ξ = etaB*calc_η_Ms(acc_model, Mach, 0.0)/(1.0 - etaB*calc_η_Ms(acc_model, Mach, 0.0))
 
-        # if dsa_model == 4
-        #     ξ = etaB*acc_function(Mach)/(1.0 - etaB*acc_function(Mach))
-        # else
-        #     ξ = etaB*acc_function(Mach)
-        # end
-        #ξ = acc_function(Mach)/(1.0 - acc_function(Mach))
-
-
-        cl = sqrt.( γ_th * Pl / rhol)
-        cr = sqrt.( γ_th * Pr / rhor)
+        cl = √( γ_th * Pl / rhol)
+        cr = √( γ_th * Pr / rhor)
 
 
         new(rhol, rhor,
@@ -109,7 +102,7 @@ struct SodCRParameters_noCRs
             γ_th, γ_cr,
             γ_exp,
             η2,
-            acc_function,
+            acc_model,
             ξ,
             xs_first_guess)
 
@@ -127,23 +120,23 @@ function solvePrCR(Pr::Float64,
                  rhol::Float64, rhor::Float64,
                  Pl::Float64, Mach::Float64,
                  γ::Float64, γ_cr::Float64,
-                 eff_function)
+                 acc_model::ShockAccelerationEfficiency)
 
     γ_1 = γ - 1.0
     γ_pow = γ_1/(2.0*γ)
     η2 = (γ-1.0)/(γ+1.0)
 
-    c_l = sqrt.(γ*Pl/rhol)
-    c_r = sqrt.(γ*Pr/rhor)
+    c_l = √(γ*Pl/rhol)
+    c_r = √(γ*Pr/rhor)
 
     f(x) = ( x/Pr - 1.0 ) * sqrt.( (1.0 - η2) / (γ * ( x/Pr + η2 ) )) -
             2.0 / γ_1 * c_l / c_r * ( 1.0 - ( x/Pl )^γ_pow )
 
-    P_m = find_zero(f, (Pr, Pl), Bisection())
+    P_m = find_zero(f, (Pr, Pl), Brent())
 
     # CR part
 
-    P_cr = eff_function(Mach) * P_m
+    P_cr = calc_η_Ms(acc_model, Mach, 0.0) * P_m
 
     vm = 2.0 * c_l / γ_1 * ( 1.0 - (P_m/Pl)^γ_pow )
 
@@ -169,14 +162,15 @@ end
 function MachSolver_HelperFunction(Pl::Float64, Pr::Float64,
                                    rhor::Float64, rhol::Float64,
                                    γ_th::Float64, γ_cr::Float64, γ_exp::Float64,
-                                   M::Float64, acc_function, etaB::Float64)
+                                   M::Float64, acc_model::ShockAccelerationEfficiency, 
+                                   etaB::Float64)
 
     vs = 0.0
 
     cr = sqrt.( γ_th * Pr / rhor)
     cl = sqrt.( γ_th * Pl / rhol)
 
-    ξ = etaB * acc_function(M)/( 1.0 - acc_function(M))
+    ξ = etaB*calc_η_Ms(acc_model, Mach, 0.0)/(1.0 - etaB*calc_η_Ms(acc_model, Mach, 0.0))
 
     if ξ > 0.0
         # solve Density
@@ -203,12 +197,12 @@ end
 function solveMachfromPrCR(Pl::Float64, Pr::Float64,
                      rhor::Float64, rhol::Float64,
                      γ_th::Float64, γ_cr::Float64, γ_exp::Float64,
-                     M::Float64, acc_function)
+                     M::Float64, acc_model::ShockAccelerationEfficiency)
 
    f(M) = MachSolver_HelperFunction(Pl, Pr,
                                     rhor, rhol,
                                     γ_th, γ_cr, γ_exp,
-                                    M, acc_function)
+                                    M, acc_model)
 
    Mach = find_zero(f, 5.0)
 
@@ -218,12 +212,12 @@ end
 function solvePrfromMachCR(Pl::Float64, Pr::Float64,
                      rhor::Float64, rhol::Float64,
                      γ_th::Float64, γ_cr::Float64, γ_exp::Float64,
-                     M::Float64, acc_function)
+                     M::Float64, acc_model::ShockAccelerationEfficiency)
 
     f(Pr) = MachSolver_HelperFunction(Pl, Pr,
                                      rhor, rhol,
                                      γ_th, γ_cr, γ_exp,
-                                     M, acc_function)
+                                     M, acc_model)
 
     Pr = find_zero(f, 0.03)
 
@@ -234,8 +228,8 @@ end
 """
     Shared functions
 """
-function get_ξ(acc_function, M::Float64)
-    return acc_function(M)/(1.0 - acc_function(M))
+function get_ξ(acc_model::ShockAccelerationEfficiency, M::Float64, etaB::Float64)
+    return etaB*calc_η_Ms(acc_model, Mach, 0.0)/(1.0 - etaB*calc_η_Ms(acc_model, Mach, 0.0))
 end
 
 function xs_f(rho4::Float64, rhor::Float64)

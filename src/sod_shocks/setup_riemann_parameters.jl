@@ -163,6 +163,9 @@ function find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
             break
         catch
             xs_first_guess += delta_xs
+            if xs_first_guess > 6.0
+                error("no convergence found!")
+            end
         end
 
     end
@@ -170,31 +173,3 @@ function find_xs_first_guess(Ul::Float64, Mach::Float64, CR_seed::Float64=0.0;
 end
 
 
-"""
-    Multiple dispatch for solve function
-"""
-# Pure hydro Sod-shock
-"""
-    solve(x::Array{Float,1}, par::SodParameters)
-
-Solves a standard Sod shock problem.
-"""
-solve(x::Array{Float64,1}, par::SodParameters) = solveSodShock(x, par=par)
-solve(x::Array{Float32,1}, par::SodParameters) = solveSodShock(Float64.(x), par=par)
-
-# CR Sod shock
-"""
-    solve(x::Array{Float,1}, par::SodCRParameters_noCRs)
-
-Solves a Sod shock with cosmic ray acceleration, but without a pre-existing CR component.
-"""
-solve(x::Array{Float64,1}, par::SodCRParameters_noCRs)   = solveSodShockCR_noPrepopulation(x, par=par)
-solve(x::Array{Float32,1}, par::SodCRParameters_noCRs)   = solveSodShockCR_noPrepopulation(Float64.(x), par=par)
-
-"""
-    solve(x::Array{Float,1}, par::SodCRParameters_withCRs)
-
-Solves a Sod shock with cosmic ray acceleration without a pre-existing CR component.
-"""
-solve(x::Array{Float64,1}, par::SodCRParameters_withCRs) = solveSodShockCR_withPrepopulation(x, par=par)
-solve(x::Array{Float32,1}, par::SodCRParameters_withCRs) = solveSodShockCR_withPrepopulation(Float64.(x), par=par)
