@@ -9,44 +9,30 @@ Abstract type for shock acceleration efficiencies
 """
 abstract type ShockAccelerationEfficiency end
 
-"""
-    struct KR07{T} <: ShockAccelerationEfficiency
-        X::T
-        η_max::T
-    end
-"""
 struct KR07{T} <: ShockAccelerationEfficiency
     X::T
     η_max::T
-
-    """
-        KR07(X::T=0.05, η_max::T=0.0348) where T
-
-    Default values for Kang, Ryu, Cen, Ostriker 2007, http://arxiv.org/abs/0704.1521v1
-    """
-    KR07(X::T=0.3, η_max::T=0.57) where T = new{T}(X, η_max)
 end
 
-
-
-
 """
-    struct KR13{T} <: ShockAccelerationEfficiency
-        X::T
-        η_max::T
-    end
+    KR07(X::T=0.05, η_max::T=0.0348) where T
+
+Default values for Kang, Ryu, Cen, Ostriker 2007, http://arxiv.org/abs/0704.1521v1
 """
+KR07(X::T=0.3, η_max::T=0.57) where T = KR07{T}(X, η_max)
+
+
 struct KR13{T} <: ShockAccelerationEfficiency
     X::T
     η_max::T
-
-    """
-        KR13(X::T=0.05, η_max::T=0.0348) where T
-
-    Default values for Kang&Ryu 2013 efficiancy.
-    """
-    KR13(X::T=0.05, η_max::T=0.2055) where T = new{T}(X, η_max)
 end
+
+"""
+    KR13(X::T=0.05, η_max::T=0.0348) where T
+
+Default values for Kang&Ryu 2013 efficiancy.
+"""
+KR13(X::T=0.05, η_max::T=0.2055) where T = KR13{T}(X, η_max)
 
 
 
@@ -60,14 +46,14 @@ end
 struct Ryu19{T} <: ShockAccelerationEfficiency
     X::T
     η_max::T
-
-    """
-        Ryu19(X::T=0.05, η_max::T=0.0348) where T 
-
-    Default values for Ryu+19 efficiancy.
-    """
-    Ryu19(X::T=0.05, η_max::T=0.0348) where T = new{T}(X, η_max)
 end
+
+"""
+    Ryu19(X::T=0.05, η_max::T=0.0348) where T 
+
+Default values for Ryu+19 efficiancy.
+"""
+Ryu19(X::T=0.05, η_max::T=0.0348) where T = Ryu19{T}(X, η_max)
 
 
 
@@ -81,14 +67,14 @@ end
 struct CS14{T} <: ShockAccelerationEfficiency
     X::T
     η_max::T
-
-    """
-        CS14(X::T=0.05, η_max::T=0.5*0.2055) where T
-
-    Default values for Caprioli&Spitkovsky 2014 efficiancy.
-    """
-    CS14(X::T=0.05, η_max::T=0.5*0.2055) where T = new{T}(X, η_max)
 end
+
+"""
+    CS14(X::T=0.05, η_max::T=0.5*0.2055) where T
+
+Default values for Caprioli&Spitkovsky 2014 efficiancy.
+"""
+CS14(X::T=0.05, η_max::T=0.5*0.2055) where T = CS14{T}(X, η_max)
 
 
 
@@ -102,14 +88,14 @@ end
 struct P16{T} <: ShockAccelerationEfficiency
     X::T
     η_max::T
-
-    """
-        P16(X::T=0.05, η_max::T=0.5) where T
-
-    Default values for constant efficiency as in Pfrommer+ 2016, doi: 10.1093/mnras/stw2941 
-    """
-    P16(X::T=0.05, η_max::T=0.5) where T = new{T}(X, η_max)
 end
+
+"""
+    P16(X::T=0.05, η_max::T=0.5) where T
+
+Default values for constant efficiency as in Pfrommer+ 2016, doi: 10.1093/mnras/stw2941 
+"""
+P16(X::T=0.05, η_max::T=0.5) where T = P16{T}(X, η_max)
 
 """
     struct P16{T} <: ShockAccelerationEfficiency
@@ -120,14 +106,14 @@ end
 struct NullAcc{T} <: ShockAccelerationEfficiency
     X::T
     η_max::T
-
-    """
-        NullAcc(X::T=0.05, η_max::T=0.5) where T
-
-    Fallback option with no injection.
-    """
-    NullAcc(X::T=0.0, η_max::T=0.0) where T = new{T}(X, η_max)
 end
+
+"""
+    NullAcc(X::T=0.05, η_max::T=0.5) where T
+
+Fallback option with no injection.
+"""
+NullAcc(X::T=0.0, η_max::T=0.0) where T = NullAcc{T}(X, η_max)
 
 
 """

@@ -113,63 +113,74 @@ struct SodParameters
     γ_exp::Float64          # helper variable
     η2::Float64             # helper variable
 
-    function SodParameters(;rhol::Float64=1.0,  rhor::Float64=0.125,
-                            Pl::Float64=0.0,    Pr::Float64=0.0,
-                            Ul::Float64=0.0,    Ur::Float64=0.0,
-                            Mach::Float64=0.0,  t::Float64,
-                            x_contact::Float64=70.0,
-                            γ_th::Float64=5.0/3.0)
+end
 
-        γ_exp    = ( γ_th - 1.0 )/( 2.0 * γ_th )
-        η2       = (γ_th-1.0)/(γ_th+1.0)
+"""
+    SodParameters( ;rhol::Float64=1.0,  rhor::Float64=0.125,
+                    Pl::Float64=0.0,    Pr::Float64=0.0,
+                    Ul::Float64=0.0,    Ur::Float64=0.0,
+                    Mach::Float64=0.0,  t::Float64,
+                    x_contact::Float64=70.0,
+                    γ_th::Float64=5.0/3.0)
 
-        # calculate Ul and Pl depending on input
-        if (Pl == 0.0) & (Ul != 0.0)
-            Pl = ( γ_th - 1.0 ) * rhol * Ul
-        elseif (Ul == 0.0) & (Pl != 0.0)
-            Ul = Pl / ( (γ_th - 1.0) * rhol )
-        end
+Constructor for standard Sod hydro shocks.
+"""
+function SodParameters( ;rhol::Float64=1.0,  rhor::Float64=0.125,
+                        Pl::Float64=0.0,    Pr::Float64=0.0,
+                        Ul::Float64=0.0,    Ur::Float64=0.0,
+                        Mach::Float64=0.0,  t::Float64,
+                        x_contact::Float64=70.0,
+                        γ_th::Float64=5.0/3.0)
 
-        # calculate Ur and Pr depending on input
-        if (Pr == 0.0) & (Ur != 0.0)
-            Pr = ( γ_th - 1.0 ) * rhor * Ur
-        elseif (Ur == 0.0) & (Pr != 0.0)
-            Ur = Pr / ( (γ_th - 1.0) * rhor )
-        end
+    γ_exp    = ( γ_th - 1.0 )/( 2.0 * γ_th )
+    η2       = (γ_th-1.0)/(γ_th+1.0)
 
-        # error handling
-        if (Pr == 0.0) & (Pl == 0.0)
-            error("No initial Pressure or energy values given!")
-        end
-
-        # solve right or left initial state from target mach number
-        if (Pr == 0.0) & (Mach != 0.0)
-            Pr = solvePrfromMach(rhol, rhor, Pl, Mach, γ_th)
-            Ur = Pr / ( (γ_th - 1.0) * rhor )
-        elseif (Pl == 0.0) & (Mach != 0.0)
-            Pl = solvePlfromMach(rhol, rhor, Pr, Mach, γ_th)
-            Ul = Pl / ( (γ_th - 1.0) * rhol )
-        elseif (Ur == 0.0) & (Pr == 0.0) & (Mach == 0.0)
-            error("Ur, Pr and Mach are zero! Can't find solution!")
-        elseif (Ul == 0.0) & (Pl == 0.0) & (Mach == 0.0)
-            error("Ul, Pl and Mach are zero! Can't find solution!")
-        end
-
-        if Mach == 0.0
-            Mach = solveMach(Pl, Pr, rhol, rhor, γ_th)
-        end
-
-        cl = sqrt.(γ_th * Pl / rhol)
-        cr = sqrt.(γ_th * Pr / rhor)
-
-        new(rhol, rhor,
-            Pl, Pr,
-            Ul, Ur,
-            cl, cr,
-            Mach, t,
-            x_contact,
-            γ_th, γ_exp, η2)
+    # calculate Ul and Pl depending on input
+    if (Pl == 0.0) & (Ul != 0.0)
+        Pl = ( γ_th - 1.0 ) * rhol * Ul
+    elseif (Ul == 0.0) & (Pl != 0.0)
+        Ul = Pl / ( (γ_th - 1.0) * rhol )
     end
+
+    # calculate Ur and Pr depending on input
+    if (Pr == 0.0) & (Ur != 0.0)
+        Pr = ( γ_th - 1.0 ) * rhor * Ur
+    elseif (Ur == 0.0) & (Pr != 0.0)
+        Ur = Pr / ( (γ_th - 1.0) * rhor )
+    end
+
+    # error handling
+    if (Pr == 0.0) & (Pl == 0.0)
+        error("No initial Pressure or energy values given!")
+    end
+
+    # solve right or left initial state from target mach number
+    if (Pr == 0.0) & (Mach != 0.0)
+        Pr = solvePrfromMach(rhol, rhor, Pl, Mach, γ_th)
+        Ur = Pr / ( (γ_th - 1.0) * rhor )
+    elseif (Pl == 0.0) & (Mach != 0.0)
+        Pl = solvePlfromMach(rhol, rhor, Pr, Mach, γ_th)
+        Ul = Pl / ( (γ_th - 1.0) * rhol )
+    elseif (Ur == 0.0) & (Pr == 0.0) & (Mach == 0.0)
+        error("Ur, Pr and Mach are zero! Can't find solution!")
+    elseif (Ul == 0.0) & (Pl == 0.0) & (Mach == 0.0)
+        error("Ul, Pl and Mach are zero! Can't find solution!")
+    end
+
+    if Mach == 0.0
+        Mach = solveMach(Pl, Pr, rhol, rhor, γ_th)
+    end
+
+    cl = sqrt.(γ_th * Pl / rhol)
+    cr = sqrt.(γ_th * Pr / rhor)
+
+    SodParameters(rhol, rhor,
+                Pl, Pr,
+                Ul, Ur,
+                cl, cr,
+                Mach, t,
+                x_contact,
+                γ_th, γ_exp, η2)
 end
 
 mutable struct SodHydroSolution
@@ -186,40 +197,28 @@ mutable struct SodHydroSolution
     vs::Float64                 # shock velocity
     Mach::Float64               # Mach number
 
-    function SodHydroSolution(x::Array{Float64,1})
-        N = length(x)
-        new(x,
-            zeros(N),   # rho
-            0.0,        # rho2
-            0.0,        # rho3
-            zeros(N),   # P
-            0.0,        # P34
-            zeros(N),   # U
-            zeros(N),   # v
-            0.0,        # v23
-            0.0,        # vt
-            0.0,        # vs
-            0.0)        # Mach
-    end
-
-    # multiple dispatch, in case gadget data is passed directly to the constructor
-    # function SodHydroSolution(x::Array{Float32,1})
-    #     N = length(x)
-    #     new(x,
-    #         zeros(N),   # rho
-    #         0.0,        # rho2
-    #         0.0,        # rho3
-    #         zeros(N),   # P
-    #         0.0,        # P34
-    #         zeros(N),   # U
-    #         zeros(N),   # v
-    #         0.0,        # v23
-    #         0.0,        # vt
-    #         0.0,        # vs
-    #         0.0)        # Mach
-    # end
 end
 
+"""
+    SodHydroSolution(x::Array{Float64,1})
+
+Constructor for an empty `SodHydroSolution` struct to fill in the solver.
+"""
+function SodHydroSolution(x::Array{Float64,1})
+    N = length(x)
+    SodHydroSolution(x,
+                    zeros(N),   # rho
+                    0.0,        # rho2
+                    0.0,        # rho3
+                    zeros(N),   # P
+                    0.0,        # P34
+                    zeros(N),   # U
+                    zeros(N),   # v
+                    0.0,        # v23
+                    0.0,        # vt
+                    0.0,        # vs
+                    0.0)        # Mach
+end
 
 
 """
