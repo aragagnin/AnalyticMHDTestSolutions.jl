@@ -1,5 +1,7 @@
 module AnalyticMHDTestSolutions
 
+    using DSAModels 
+    
     # riemann solvers
     include("sod_shocks/cr_dsa_models.jl")
     include("sod_shocks/cr_sod_shock_main.jl")

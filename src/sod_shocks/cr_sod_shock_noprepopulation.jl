@@ -24,32 +24,32 @@ struct SodCRParameters_noCRs
     ξ::Float64
     first_guess::Float64
 
-    function SodCRParameters_noCRs(;rhol::Float64=1.0,  rhor::Float64=0.125,
-                                    Pl::Float64=0.0,    Pr::Float64=0.0,
-                                    Ul::Float64=0.0,    Ur::Float64=0.0,
-                                    Mach::Float64=0.0,  t::Float64,
-                                    x_contact::Float64=70.0,
-                                    Pe_ratio::Float64=0.01,
-                                    γ_th::Float64=5.0/3.0,
-                                    γ_cr::Float64=4.0/3.0,
-                                    thetaB::Float64=0.0,
-                                    theta_crit::Float64=(π/4.0),
-                                    dsa_model::Int64=-1,
-                                    xs_first_guess::Float64=4.7)
-
-        γ_exp    = ( γ_th - 1.0 )/( 2.0 * γ_th )
-        η2       = (γ_th-1.0)/(γ_th+1.0)
-
+    function SodCRParameters_noCRs(; rhol::Float64 = 1.0, rhor::Float64 = 0.125,
+        Pl::Float64 = 0.0, Pr::Float64 = 0.0,
+        Ul::Float64 = 0.0, Ur::Float64 = 0.0,
+        Mach::Float64 = 0.0, t::Float64,
+        x_contact::Float64 = 70.0,
+        Pe_ratio::Float64 = 0.01,
+        γ_th::Float64 = 5.0 / 3.0,
+        γ_cr::Float64 = 4.0 / 3.0,
+        thetaB::Float64 = 0.0,
+        theta_crit::Float64 = (π / 4.0),
+        dsa_model::Int64 = -1,
+        xs_first_guess::Float64 = 4.7)
+    
+        γ_exp = (γ_th - 1.0) / (2.0 * γ_th)
+        η2 = (γ_th - 1.0) / (γ_th + 1.0)
+    
         # calculate Ul and Pl depending on input
         if (Pl == 0.0) & (Ul != 0.0)
-            Pl = ( γ_th - 1.0 ) * rhol * Ul
+            Pl = (γ_th - 1.0) * rhol * Ul
         elseif (Ul == 0.0) & (Pl != 0.0)
-            Ul = Pl / ( (γ_th - 1.0) * rhol )
+            Ul = Pl / ((γ_th - 1.0) * rhol)
         else
             error("Both Ul and Pl are zero!")
         end
-
-
+    
+    
         if dsa_model == 0
             acc_model = KR07()
         elseif dsa_model == 1
@@ -62,36 +62,36 @@ struct SodCRParameters_noCRs
             acc_model = P16()
         else
             error("Invalid DSA model selection!")
-
+    
         end
-
+    
         # calculate Ur and Pr depending on input
         if (Pr == 0.0) & (Ur != 0.0)
-            Pr = ( γ_th - 1.0 ) * rhor * Ur
+            Pr = (γ_th - 1.0) * rhor * Ur
         elseif (Ur == 0.0) & (Pr != 0.0)
-            Ur = Pr / ( (γ_th - 1.0) * rhor )
+            Ur = Pr / ((γ_th - 1.0) * rhor)
         elseif (Ur == 0.0) & (Pr == 0.0) & (Mach == 0.0)
             error("Ur, Pr and Mach are zero! Can't find solution!")
         else
             println("Both Ur and Pr are zero! Will calculate them depending on Machnumber.")
             Pr = solvePrfromMachCR(Pl, Pr,
-                                   rhor, rhol,
-                                   γ_th, γ_cr, γ_exp,
-                                   Mach, acc_model)
-            Ur = Pr / ( (γ_th - 1.0) * rhor )
+                rhor, rhol,
+                γ_th, γ_cr, γ_exp,
+                Mach, acc_model)
+            Ur = Pr / ((γ_th - 1.0) * rhor)
         end
-
+    
         # calculate B angle dependent efficiency following Pais+ 2018, MNRAS, 478, 5278
-        delta_theta = π/18.0
-        thetaB *= (π/180.0)
-        etaB = 0.5*( tanh( (theta_crit - thetaB)/delta_theta ) + 1.0 )
-
-        ξ = etaB*calc_η_Ms(acc_model, Mach, 0.0)/(1.0 - etaB*calc_η_Ms(acc_model, Mach, 0.0))
-
-        cl = √( γ_th * Pl / rhol)
-        cr = √( γ_th * Pr / rhor)
-
-
+        delta_theta = π / 18.0
+        thetaB *= (π / 180.0)
+        etaB = 0.5 * (tanh((theta_crit - thetaB) / delta_theta) + 1.0)
+    
+        ξ = etaB * η_Ms(acc_model, Mach, 0.0) / (1.0 - etaB * η_Ms(acc_model, Mach, 0.0))
+    
+        cl = √(γ_th * Pl / rhol)
+        cr = √(γ_th * Pr / rhor)
+    
+    
         new(rhol, rhor,
             Pl, Pr,
             Ul, Ur,
@@ -105,7 +105,7 @@ struct SodCRParameters_noCRs
             acc_model,
             ξ,
             xs_first_guess)
-
+    
     end
 end
 
