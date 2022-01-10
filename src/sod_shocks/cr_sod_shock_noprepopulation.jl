@@ -20,7 +20,7 @@ struct SodCRParameters_noCRs
     γ_cr::Float64
     γ_exp::Float64
     η2::Float64
-    acc_model::ShockAccelerationEfficiency
+    acc_model::AbstractShockAccelerationEfficiency
     ξ::Float64
     first_guess::Float64
 
@@ -120,7 +120,7 @@ function solvePrCR(Pr::Float64,
                  rhol::Float64, rhor::Float64,
                  Pl::Float64, Mach::Float64,
                  γ::Float64, γ_cr::Float64,
-                 acc_model::ShockAccelerationEfficiency)
+                 acc_model::AbstractShockAccelerationEfficiency)
 
     γ_1 = γ - 1.0
     γ_pow = γ_1/(2.0*γ)
@@ -162,7 +162,7 @@ end
 function MachSolver_HelperFunction(Pl::Float64, Pr::Float64,
                                    rhor::Float64, rhol::Float64,
                                    γ_th::Float64, γ_cr::Float64, γ_exp::Float64,
-                                   M::Float64, acc_model::ShockAccelerationEfficiency, 
+                                   M::Float64, acc_model::AbstractShockAccelerationEfficiency, 
                                    etaB::Float64)
 
     vs = 0.0
@@ -197,7 +197,7 @@ end
 function solveMachfromPrCR(Pl::Float64, Pr::Float64,
                      rhor::Float64, rhol::Float64,
                      γ_th::Float64, γ_cr::Float64, γ_exp::Float64,
-                     M::Float64, acc_model::ShockAccelerationEfficiency)
+                     M::Float64, acc_model::AbstractShockAccelerationEfficiency)
 
    f(M) = MachSolver_HelperFunction(Pl, Pr,
                                     rhor, rhol,
@@ -212,7 +212,7 @@ end
 function solvePrfromMachCR(Pl::Float64, Pr::Float64,
                      rhor::Float64, rhol::Float64,
                      γ_th::Float64, γ_cr::Float64, γ_exp::Float64,
-                     M::Float64, acc_model::ShockAccelerationEfficiency)
+                     M::Float64, acc_model::AbstractShockAccelerationEfficiency)
 
     f(Pr) = MachSolver_HelperFunction(Pl, Pr,
                                      rhor, rhol,
@@ -228,7 +228,7 @@ end
 """
     Shared functions
 """
-function get_ξ(acc_model::ShockAccelerationEfficiency, M::Float64, etaB::Float64)
+function get_ξ(acc_model::AbstractShockAccelerationEfficiency, M::Float64, etaB::Float64)
     return etaB*calc_η_Ms(acc_model, Mach, 0.0)/(1.0 - etaB*calc_η_Ms(acc_model, Mach, 0.0))
 end
 
