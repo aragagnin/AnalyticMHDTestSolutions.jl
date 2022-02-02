@@ -48,7 +48,12 @@ function RiemannParameters(;rhol::Float64=1.0, rhor::Float64=0.125,      # densi
 
     # Error handling
     if (Pl == 0.0 && Ul == 0.0)
-        error("Both Ul and Pl are zero! Plase supply initital pressure values.")
+        if Mach == 0.0 && dsa_model != -1
+            error("Both Ul and Pl are zero! Plase supply initital pressure values.")
+        else
+            Pl = solvePlfromMach(ρl, ρr, Pr, M, γ)
+            Ul = P_to_U(Pl, rhol)
+        end
     end # error handling
 
 
