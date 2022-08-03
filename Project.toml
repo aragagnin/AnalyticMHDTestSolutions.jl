@@ -18,7 +18,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 Distributions = "0.24, 0.25"
-GadgetIO = "0.5"
+GadgetIO = "0.5, 0.6"
 Interpolations = "0.13"
 ProgressMeter = "1.4"
 Roots = "1.0"
