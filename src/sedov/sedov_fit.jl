@@ -1,5 +1,5 @@
 using SpecialFunctions: gamma
-using Interpolations: LinearInterpolation
+using Interpolations: linear_interpolation
 
 struct w1Data
     ndim::Int64
@@ -191,9 +191,9 @@ function get_ideal_sedov_fit(ndim::Integer=3; γ::Real=5.0/3.0)
         P[i] = Pfunc(F[i], c)
     end
 
-    D_interpolated = LinearInterpolation(xi, D)
-    P_interpolated = LinearInterpolation(xi, P)
-    V_interpolated = LinearInterpolation(xi, V)
+    D_interpolated = linear_interpolation(xi, D)
+    P_interpolated = linear_interpolation(xi, P)
+    V_interpolated = linear_interpolation(xi, V)
     I = @. xi^(ndim-1) * (D*V^2 + P) # Integrand
     dxi = zeros(length(I))
     # Use middle points
