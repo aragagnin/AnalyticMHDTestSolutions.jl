@@ -1,5 +1,11 @@
 # This file is machine-generated - editing it directly is not advised
 
+[[DSAModels]]
+deps = ["Test"]
+git-tree-sha1 = "f7fe3f41a97e2442ee8bdff628f6fe8892adc88d"
+uuid = "c94b82ce-bc6a-4c64-9fc0-cb2d7d683713"
+version = "1.0.0"
+
 [[ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
 uuid = "a4c015fc-c6ff-483c-b24f-f7ea428134e9"
